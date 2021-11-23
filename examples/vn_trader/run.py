@@ -1,5 +1,19 @@
 # flake8: noqa
+from vnpy_ctptest import CtptestGateway
+from vnpy_esunny import EsunnyGateway
+from vnpy_mini import MiniGateway
+# from vnpy_sopt import SoptGateway
+# from vnpy_uft import UftGateway
+# from vnpy_xtp import XtpGateway
+from vnpy.app.pytdx_loader import PytdxLoaderApp
 from vnpy.event import EventEngine
+# from vnpy.gateway.femas import FemasGateway
+# from vnpy.gateway.hsoption import HsoptionGateway
+# from vnpy.gateway.minitest import MinitestGateway
+# from vnpy.gateway.sec import SecGateway
+# from vnpy.gateway.sopttest import SopttestGateway
+# from vnpy.gateway.tora import ToraOptionGateway, ToraStockGateway
+from vnpy.gateway.gtja import GtjaGateway
 
 from vnpy.trader.engine import MainEngine
 from vnpy.trader.ui import MainWindow, create_qapp
@@ -46,23 +60,23 @@ from vnpy_ctp import CtpGateway
 # from vnpy_tts import TtsGateway
 # from vnpy.gateway.alpaca import AlpacaGateway
 
-# from vnpy_ctastrategy import CtaStrategyApp
-# from vnpy_ctabacktester import CtaBacktesterApp
-# from vnpy_spreadtrading import SpreadTradingApp
-# from vnpy.app.algo_trading import AlgoTradingApp
-# from vnpy.app.option_master import OptionMasterApp
-# from vnpy.app.portfolio_strategy import PortfolioStrategyApp
-# from vnpy.app.script_trader import ScriptTraderApp
+from vnpy_ctastrategy import CtaStrategyApp
+from vnpy_ctabacktester import CtaBacktesterApp
+from vnpy_spreadtrading import SpreadTradingApp
+from vnpy.app.algo_trading import AlgoTradingApp
+from vnpy.app.option_master import OptionMasterApp
+from vnpy.app.portfolio_strategy import PortfolioStrategyApp
+from vnpy.app.script_trader import ScriptTraderApp
 # from vnpy.app.market_radar import MarketRadarApp
-# from vnpy_chartwizard import ChartWizardApp
-# from vnpy.app.rpc_service import RpcServiceApp
-# from vnpy.app.excel_rtd import ExcelRtdApp
-# from vnpy_datamanager import DataManagerApp
-# from vnpy_datarecorder import DataRecorderApp
-# from vnpy_riskmanager import RiskManagerApp
-# from vnpy_webtrader import WebTraderApp
-# from vnpy.app.portfolio_manager import PortfolioManagerApp
-# from vnpy.app.paper_account import PaperAccountApp
+from vnpy_chartwizard import ChartWizardApp
+from vnpy.app.rpc_service import RpcServiceApp
+from vnpy.app.excel_rtd import ExcelRtdApp
+from vnpy_datamanager import DataManagerApp
+from vnpy_datarecorder import DataRecorderApp
+from vnpy_riskmanager import RiskManagerApp
+from vnpy_webtrader import WebTraderApp
+from vnpy.app.portfolio_manager import PortfolioManagerApp
+from vnpy.app.paper_account import PaperAccountApp
 
 
 def main():
@@ -74,13 +88,14 @@ def main():
     main_engine = MainEngine(event_engine)
 
     main_engine.add_gateway(CtpGateway)
-    # main_engine.add_gateway(CtptestGateway)
-    # main_engine.add_gateway(MiniGateway)
+    main_engine.add_gateway(CtptestGateway)
+    main_engine.add_gateway(MiniGateway)
+    main_engine.add_gateway(GtjaGateway)
     # main_engine.add_gateway(MinitestGateway)
     # main_engine.add_gateway(FemasGateway)
     # main_engine.add_gateway(SoptGateway)
     # main_engine.add_gateway(SopttestGateway)
-    # main_engine.add_gateway(SecGateway)    
+    # main_engine.add_gateway(SecGateway)
     # main_engine.add_gateway(UftGateway)
     # main_engine.add_gateway(EsunnyGateway)
     # main_engine.add_gateway(HsoptionGateway)
@@ -96,11 +111,11 @@ def main():
     # main_engine.add_gateway(DaGateway)
     # main_engine.add_gateway(Mt5Gateway)
     # main_engine.add_gateway(BinanceSpotGateway)
-    # main_engine.add_gateway(BinanceInverseGateway) 
-    # main_engine.add_gateway(BinanceUsdtGateway)   
+    # main_engine.add_gateway(BinanceInverseGateway)
+    # main_engine.add_gateway(BinanceUsdtGateway)
     # main_engine.add_gateway(HuobiSpotGateway)
     # main_engine.add_gateway(HuobiFuturesGateway)
-    # main_engine.add_gateway(HuobiInverseGateway)    
+    # main_engine.add_gateway(HuobiInverseGateway)
     # main_engine.add_gateway(HuobiUsdtGateway)
     # main_engine.add_gateway(OkexGateway)
     # main_engine.add_gateway(BitmexGateway)
@@ -115,23 +130,24 @@ def main():
     # main_engine.add_gateway(TtsGateway)
     # main_engine.add_gateway(AlpacaGateway)
 
-    # main_engine.add_app(CtaStrategyApp)
-    # main_engine.add_app(CtaBacktesterApp)
-    # main_engine.add_app(SpreadTradingApp)
-    # main_engine.add_app(AlgoTradingApp)
-    # main_engine.add_app(OptionMasterApp)
-    # main_engine.add_app(PortfolioStrategyApp)
-    # main_engine.add_app(ScriptTraderApp)
+    main_engine.add_app(CtaStrategyApp)
+    main_engine.add_app(CtaBacktesterApp)
+    main_engine.add_app(SpreadTradingApp)
+    main_engine.add_app(AlgoTradingApp)
+    main_engine.add_app(OptionMasterApp)
+    main_engine.add_app(PortfolioStrategyApp)
+    main_engine.add_app(ScriptTraderApp)
     # main_engine.add_app(MarketRadarApp)
-    # main_engine.add_app(ChartWizardApp)
-    # main_engine.add_app(RpcServiceApp)
-    # main_engine.add_app(ExcelRtdApp)
-    # main_engine.add_app(DataManagerApp)
-    # main_engine.add_app(DataRecorderApp)
-    # main_engine.add_app(RiskManagerApp)
-    # main_engine.add_app(WebTraderApp)
-    # main_engine.add_app(PortfolioManagerApp)
-    # main_engine.add_app(PaperAccountApp)
+    main_engine.add_app(ChartWizardApp)
+    main_engine.add_app(RpcServiceApp)
+    main_engine.add_app(ExcelRtdApp)
+    main_engine.add_app(DataManagerApp)
+    main_engine.add_app(DataRecorderApp)
+    main_engine.add_app(RiskManagerApp)
+    main_engine.add_app(WebTraderApp)
+    main_engine.add_app(PortfolioManagerApp)
+    main_engine.add_app(PaperAccountApp)
+    main_engine.add_app(PytdxLoaderApp)
     
     main_window = MainWindow(main_engine, event_engine)
     main_window.showMaximized()
