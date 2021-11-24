@@ -1,7 +1,19 @@
-from vnpy.event import EventEngine
+import traceback
+from datetime import datetime, timedelta
+from threading import Thread
+
+import pandas as pd
+import tushare as ts
+from vnpy_ctabacktester.engine import EVENT_BACKTESTER_LOG
+
+from vnpy.event import EventEngine, Event
 from vnpy.trader.constant import Exchange, Interval
+from vnpy.trader.database import get_database
+from vnpy.trader.datafeed import get_datafeed
 from vnpy.trader.engine import MainEngine
+from vnpy.trader.object import HistoryRequest
 from vnpy.trader.ui import QtCore, QtWidgets
+from vnpy.trader.utility import extract_vt_symbol
 
 from ..engine import APP_NAME
 from ..my_pytdx.contracts import read_contracts_json_dict
@@ -9,124 +21,56 @@ from ..my_pytdx.contracts import read_contracts_json_dict
 
 class PytdxLoaderWidget(QtWidgets.QWidget):
     """"""
+    signal_log = QtCore.pyqtSignal(Event)
 
     def __init__(self, main_engine: MainEngine, event_engine: EventEngine):
         """"""
         super().__init__()
 
         self.engine = main_engine.get_engine(APP_NAME)
-
+        self.main_engine = main_engine
+        self.event_engine = event_engine
         self.progress_bar_dict = {}
         self.init_ui()
+
+        self.register_event()
+        self.thread = None
+        self.isRunnig = True
+        self.count = 0
+
+    def register_event(self):
+        self.signal_log.connect(self.process_log_event)
+        self.event_engine.register("tdxlog", self.signal_log.emit)
 
     def init_ui(self):
         """"""
         self.setWindowTitle("pytdx载入")
         # self.setFixedWidth(600)
+        self.log_monitor = QtWidgets.QTextEdit()
+        self.log_monitor.setMaximumHeight(400)
+        vbox = QtWidgets.QVBoxLayout()
+
+        vbox.addWidget(self.log_monitor)
 
         self.setWindowFlags(
             (self.windowFlags() | QtCore.Qt.CustomizeWindowHint)
             & ~QtCore.Qt.WindowMaximizeButtonHint)
 
-        hbox_layout = QtWidgets.QHBoxLayout()
+        run_download = QtWidgets.QPushButton("自动下载数据.to_db")
+        run_download.clicked.connect(self.run_downloading1)
 
-        load_button = QtWidgets.QPushButton("载入数据.to_db")
-        load_button.clicked.connect(self.load_data)
-
-        to_csv_button = QtWidgets.QPushButton("载入数据.to_csv")
-        to_csv_button.clicked.connect(self.load_data)
-
-        self.symbol_type = QtWidgets.QLineEdit("L8")
-
-        self.symbol_combo = QtWidgets.QComboBox()
-        self.exchange_combo = QtWidgets.QComboBox()
-        for i in Exchange:
-            self.exchange_combo.addItem(str(i.name), i)
-        self.exchange_combo.activated[str].connect(self.onExchangeActivated)
-
-        self.interval_combo = QtWidgets.QComboBox()
-        for i in Interval:
-            self.interval_combo.addItem(str(i.name), i)
-
-        self.datetime_edit = QtWidgets.QLineEdit("Datetime")
-        self.open_edit = QtWidgets.QLineEdit("Open")
-        self.high_edit = QtWidgets.QLineEdit("High")
-        self.low_edit = QtWidgets.QLineEdit("Low")
-        self.close_edit = QtWidgets.QLineEdit("Close")
-        self.volume_edit = QtWidgets.QLineEdit("Volume")
-        self.open_interest_edit = QtWidgets.QLineEdit("OpenInterest")
-
-        self.format_edit = QtWidgets.QLineEdit("%Y-%m-%d %H:%M:%S")
-
-        info_label = QtWidgets.QLabel("合约信息")
-        info_label.setAlignment(QtCore.Qt.AlignCenter)
-
-        head_label = QtWidgets.QLabel("表头信息")
-        head_label.setAlignment(QtCore.Qt.AlignCenter)
-
-        format_label = QtWidgets.QLabel("格式信息")
-        format_label.setAlignment(QtCore.Qt.AlignCenter)
-
-        save_progress_label = QtWidgets.QLabel("保存进度信息")
-        save_progress_label.setAlignment(QtCore.Qt.AlignCenter)
-
-        save_progress_bar = QtWidgets.QProgressBar()
-        save_progress_bar.setAlignment(QtCore.Qt.AlignCenter)
-        self.progress_bar_dict['save_progress_bar'] = save_progress_bar
+        run_downloadstop = QtWidgets.QPushButton("自动下载数据停止")
+        run_downloadstop.clicked.connect(self.run_downloading2)
 
         form_left = QtWidgets.QFormLayout()
         form_left.addRow(QtWidgets.QLabel())
-        form_left.addRow(info_label)
-        form_left.addRow("交易所", self.exchange_combo)
-        form_left.addRow("代码", self.symbol_combo)
-        form_left.addRow("类型\n(L8主连/L9指数/2006)", self.symbol_type)
-        form_left.addRow("周期", self.interval_combo)
-        form_left.addRow(QtWidgets.QLabel())
-        form_left.addRow(head_label)
-        form_left.addRow("时间戳", self.datetime_edit)
-        form_left.addRow("开盘价", self.open_edit)
-        form_left.addRow("最高价", self.high_edit)
-        form_left.addRow("最低价", self.low_edit)
-        form_left.addRow("收盘价", self.close_edit)
-        form_left.addRow("成交量", self.volume_edit)
-        form_left.addRow("持仓量", self.open_interest_edit)
-        form_left.addRow(QtWidgets.QLabel())
-        form_left.addRow(format_label)
-        form_left.addRow("时间格式", self.format_edit)
-        form_left.addRow(QtWidgets.QLabel())
-        form_left.addRow(save_progress_label)
-        form_left.addRow(save_progress_bar)
-        form_left.addRow(load_button)
-        form_left.addRow(to_csv_button)
+        form_left.addRow(run_download)
+        form_left.addRow(run_downloadstop)
         form_left_widget = QtWidgets.QWidget()
         form_left_widget.setLayout(form_left)
+        vbox.addWidget(form_left_widget)
 
-        form_right_layout = QtWidgets.QFormLayout()
-        # form_right_layout.addRow(QtWidgets.QLabel())
-        # form_right_layout.addRow(info_label)
-        # form_right_layout.addRow("交易所", self.exchange_combo)
-        # form_right_layout.addRow("代码", self.symbol_combo)
-        # form_right_layout.addRow("类型\n(L8主连/L9指数/2006)", self.symbol_type)
-        # form_right_layout.addRow("周期", self.interval_combo)
-        # form_right_layout.addRow(QtWidgets.QLabel())
-        # form_right_layout.addRow(head_label)
-        # form_right_layout.addRow("时间戳", self.datetime_edit)
-        # form_right_layout.addRow("开盘价", self.open_edit)
-        # form_right_layout.addRow("最高价", self.high_edit)
-        # form_right_layout.addRow("最低价", self.low_edit)
-        # form_right_layout.addRow("收盘价", self.close_edit)
-        # form_right_layout.addRow("成交量", self.volume_edit)
-        # form_right_layout.addRow("持仓量", self.open_interest_edit)
-        form_right_widget = QtWidgets.QWidget()
-        form_right_widget.setLayout(form_right_layout)
-
-        hbox_layout.addStretch(1)
-        hbox_layout.addWidget(form_left_widget)
-        hbox_layout.addWidget(form_right_widget)
-
-        self.setLayout(hbox_layout)
-
-        # self.setLayout(form)
+        self.setLayout(vbox)
 
     def onExchangeActivated(self, exchange_str):
         self.symbol_combo.clear()
@@ -146,9 +90,76 @@ class PytdxLoaderWidget(QtWidgets.QWidget):
         else:
             err_msg = f"{exchange_str} is not in pytdx market_code_info.json file!"
             QtWidgets.QMessageBox.information(self, "载入失败！", err_msg)
-            print(err_msg)
+            self.write_log1(err_msg)
 
+    def run_downloading2(
+            self
+    ):
+        self.isRunnig = False
+        self.thread = None
 
+    def run_downloading1(
+            self
+    ):
+        self.thread = Thread(
+            target=self.run_downloading,
+            args=(
+
+            )
+        )
+        self.thread.start()
+
+    def run_downloading(
+            self
+    ):
+
+        ts.set_token('6a6c84ffeaa318f9a1d96414416feabc32bf52244ea2bfdd675959b9')
+        # 初始化pro接口
+        pro = ts.pro_api()
+        df = pro.stock_basic(exchange='', list_status='L',
+                             fields='ts_code,symbol,name,area,industry,list_date')
+        records = df.to_dict('records')
+        end_date: [str, datetime] = datetime.now()
+
+        for row in records:
+            if self.isRunnig:
+                vt_symbol = row['ts_code']
+                if vt_symbol[-2:] == "SZ":
+                    vt_symbol = row['symbol'] + "." + "SZSE"
+                elif vt_symbol[-2:] == "SH":
+                    vt_symbol = row['symbol'] + "." + "SSE"
+                intervals = ["1m", "1h", "d"]  # "w", "tick"
+                for index in range(len(intervals)):
+                    interval = intervals[index]
+                    start = datetime.now() + timedelta(days=-365 * 10)
+
+                    self.write_log1(f"{vt_symbol}-{interval}开始下载历史数据")
+
+                    try:
+                        symbol, exchange = extract_vt_symbol(vt_symbol)
+                    except ValueError:
+                        self.write_log1(f"{vt_symbol}解析失败，请检查交易所后缀")
+                        return
+
+                    req = HistoryRequest(
+                        symbol=symbol,
+                        exchange=exchange,
+                        interval=Interval(interval),
+                        start=start,
+                        end=end_date
+                    )
+
+                    try:
+                        data = get_datafeed().query_bar_history(req)
+
+                        if data:
+                            get_database().save_bar_data(data)
+                            self.write_log1(f"{vt_symbol}-{interval}历史数据下载完成")
+                        else:
+                            self.write_log1(f"数据下载失败，无法获取{vt_symbol}的历史数据")
+                    except Exception:
+                        msg = f"数据下载失败，触发异常：\n{traceback.format_exc()}"
+                        self.write_log1(msg)
 
     def load_data(self):
         """"""
@@ -195,3 +206,24 @@ class PytdxLoaderWidget(QtWidgets.QWidget):
         总数量：{count}\n\
         "
         QtWidgets.QMessageBox.information(self, "载入成功！", msg)
+
+    def write_log(self, msg):
+        """"""
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        msg = f"{timestamp}\t{msg}"
+        self.log_monitor.append(msg)
+        self.count = self.count + 1
+        if self.count > 10:
+            self.log_monitor.clear()
+            self.count = 0
+
+    def write_log1(self, msg: str):
+        """"""
+        event = Event("tdxlog")
+        event.data = msg
+        self.event_engine.put(event)
+
+    def process_log_event(self, event: Event):
+        """"""
+        msg = event.data
+        self.write_log(msg)

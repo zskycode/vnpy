@@ -22,7 +22,7 @@ INTERVAL_VT2TS = {
     Interval.HOUR: "60min",
     Interval.DAILY: "D",
     Interval.WEEKLY: "W",
-    Interval.TICK: "1min"
+    Interval.TICK: "1min",
 }
 
 # 股票支持列表
@@ -55,7 +55,9 @@ EXCHANGE_VT2TS = {
 INTERVAL_ADJUSTMENT_MAP = {
     Interval.MINUTE: timedelta(minutes=1),
     Interval.HOUR: timedelta(hours=1),
-    Interval.DAILY: timedelta()
+    Interval.DAILY: timedelta(),
+    Interval.WEEKLY: timedelta(),
+    Interval.TICK: timedelta(minutes=1),
 }
 
 # 中国上海时区
@@ -153,7 +155,7 @@ class TdxDatafeed(BaseDatafeed):
         end = req.end.strftime("%Y%m%d")
         start_date = pd.to_datetime(start)
         end_date = pd.to_datetime(end)
-        end_date = end_date+ timedelta(days=1)
+        end_date = end_date + timedelta(days=1)
         ts_symbol = to_ts_symbol(symbol, exchange)
         if not ts_symbol:
             return None
@@ -168,8 +170,8 @@ class TdxDatafeed(BaseDatafeed):
 
         adjustment = INTERVAL_ADJUSTMENT_MAP[interval]
 
-        if (end_date - start_date).days * 5 / 7 > 1000:
-            warnings.warn(f"{end_date.date()} - {start_date.date()} 超过1000个交易日，K线获取可能失败，返回为0")
+        # if (end_date - start_date).days * 5 / 7 > 1000:
+        #     warnings.warn(f"{end_date.date()} - {start_date.date()} 超过1000个交易日，K线获取可能失败，返回为0")
 
         api = TdxHq_API(heartbeat=True, auto_retry=True)
 
@@ -181,7 +183,6 @@ class TdxDatafeed(BaseDatafeed):
             to_tdx_market = lambda x: 1 if x[0] == "6" else 0
             freq = ts_interval
             begin_index = self.get_index(api, end_date, freq, symbol, to_tdx_market)
-
 
             end_index = 30
             # print(begin_index)
