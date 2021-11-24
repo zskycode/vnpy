@@ -18,6 +18,7 @@ class IPsSource:
     def __init__(self):
 
         self.hq_ips_dict = {
+            "测试1": "tdx.xmzq.com.cn",
             "深圳双线主站1": "120.79.60.82",
             "深圳双线主站2": "47.112.129.66",
             "上海双线主站1": "47.103.48.45",
@@ -29,6 +30,7 @@ class IPsSource:
             "东莞电信主站": "113.105.142.162"
         }
         self.exhq_ips_dict = {
+            "测试1": "tdx.xmzq.com.cn",
             "扩展市场深圳双线": "112.74.214.43",
             "扩展市场北京双线": "47.92.127.181",
             "扩展市场深圳双线3": "47.107.75.159",
@@ -55,9 +57,9 @@ class IPsSource:
                 fast_exhq_ip_dict[f"{ip}:{self.exhq_port}"] = cost_time
 
         ip_str, port_str = min(fast_exhq_ip_dict, key=fast_exhq_ip_dict.get).split(":")
-        self.log.write_log(f"-"*50)
+        self.log.write_log(f"-" * 50)
         self.log.write_log(f"Select ({ip_str} : {port_str})")
-        self.log.write_log(f"-"*50)
+        self.log.write_log(f"-" * 50)
 
         return ip_str, int(port_str)
 
@@ -90,4 +92,3 @@ if __name__ == '__main__':
     ips_pool = IPsSource()
     exhq_ip, exhq_port = ips_pool.get_fast_exhq_ip()
     hq_ip, hq_port = ips_pool.get_fast_hq_ip()
-
