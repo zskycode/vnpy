@@ -128,7 +128,7 @@ class PytdxLoaderWidget(QtWidgets.QWidget):
                     vt_symbol = row['symbol'] + "." + "SZSE"
                 elif vt_symbol[-2:] == "SH":
                     vt_symbol = row['symbol'] + "." + "SSE"
-                intervals = ["1m", "1h", "d"]  # "w", "tick"
+                intervals = ["1m", "1h", "d", "w", "tick"]  #
                 for index in range(len(intervals)):
                     interval = intervals[index]
                     start = datetime.now() + timedelta(days=-365 * 10)
